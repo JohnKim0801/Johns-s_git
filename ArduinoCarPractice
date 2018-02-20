@@ -1,0 +1,232 @@
+#include <SoftwareSerial.h>
+#include <Arduino.h>
+#define NOTE_G 392 //스피커
+#define NOTE_E 330
+int A_1A = 6;
+int A_1B = 11;
+int B_1A = 3;
+int B_1B = 5;
+
+int btRxPin = 12;     //블루투스 핀
+int btTxPin = 13;
+
+SoftwareSerial bluetoothSerial(btRxPin, btTxPin);  //블루투스 통신
+
+int speed =200;
+long duaration =0;
+
+int trigPin = 8;
+int echoPin = 9;
+long leftDistance = 0;
+long rightDistance = 0;
+
+const int LED1pin = 1;
+const int LED2pin = 2;
+const int LIGHT=1;
+const int MIN_LIGHT=200;              //야간조명
+const int MAX_LIGHT=900;
+int val=0;
+
+const int SPEAKER=7; //스피커
+void forward() {
+  //모터A 정회전
+  analogWrite(A_1A, speed);
+  analogWrite(A_1B, 0);
+  //모터B 정회전
+  analogWrite(B_1A, speed);
+  analogWrite(B_1B, 0);
+}
+void back() {
+  //모터A 역회전
+  analogWrite(A_1A, 0);
+  analogWrite(A_1B, speed);
+  //모터B 역회전
+  analogWrite(B_1A, 0);
+  analogWrite(B_1B, speed);
+}
+
+/**
+   오른쪽 모터를 정지, 왼쪽 모터를 정회전하여 우회전합니다.
+*/
+void right() {
+  //모터A 정회전
+  analogWrite(A_1A, 0);
+  analogWrite(A_1B, 0);
+  //모터B 역회전
+  analogWrite(B_1A, speed);
+  analogWrite(B_1B, 0);
+}
+/**
+   오른쪽 모터를 정회전, 왼쪽모터를 정지하여 좌회전합니다.
+*/
+const int SPEAKER=7; //스피커
+
+void forward() {
+  //모터A 정회전
+  analogWrite(A_1A, speed);
+  analogWrite(A_1B, 0);
+  //모터B 정회전
+  analogWrite(B_1A, speed);
+  analogWrite(B_1B, 0);
+}
+void back() {
+  //모터A 역회전
+  analogWrite(A_1A, 0);
+  analogWrite(A_1B, speed);
+  //모터B 역회전
+  analogWrite(B_1A, 0);
+  analogWrite(B_1B, speed);
+}
+
+/**
+   오른쪽 모터를 정지, 왼쪽 모터를 정회전하여 우회전합니다.
+*/
+void right() {
+  //모터A 정회전
+  analogWrite(A_1A, 0);
+  analogWrite(A_1B, 0);
+  //모터B 역회전
+  analogWrite(B_1A, speed);
+  analogWrite(B_1B, 0);
+}
+
+/**
+   오른쪽 모터를 정회전, 왼쪽모터를 정지하여 좌회전합니다.
+*/
+void left() {
+  //모터A 역회전
+  analogWrite(A_1A, speed);
+  analogWrite(A_1B, 0);
+  //모터B 정회전
+  analogWrite(B_1A, 0);
+  analogWrite(B_1B, 0);
+}
+
+/**
+   오른쪽,왼쪽모터를 모두 정지합니다.
+*/
+void stop() {
+  //모터A 정지
+  analogWrite(A_1A, 0);
+  analogWrite(A_1B, 0);
+  //모터B 정지
+  analogWrite(B_1A, 0);
+  analogWrite(B_1B, 0);
+}
+
+float getDistanceCM() {
+  digitalWrite(echoPin, LOW);
+  digitalWrite(trigPin, LOW);   //거리 측정 시작
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+ float distance = pulseIn(echoPin, HIGH)  / 29.0 / 2.0;
+
+  return distance;           //거리값 저장
+
+}
+void setup() {
+  pinMode(trigPin, OUTPUT); // Trigger is an output pin
+  pinMode(echoPin, INPUT); // Echo is an input pin
+//초음파 센서 초기화
+bluetoothSerial.begin(9600);
+  pinMode(A_1A, OUTPUT);
+  pinMode(A_1B, OUTPUT);
+  pinMode(B_1A, OUTPUT);
+  pinMode(B_1B, OUTPUT);
+  digitalWrite(A_1A, LOW);
+  digitalWrite(A_1B, LOW);
+  digitalWrite(B_1A, LOW);
+  digitalWrite(B_1B, LOW);
+  pinMode(LED1pin,OUTPUT);
+  pinMode(LED2pin,OUTPUT);
+
+}
+
+void loop() {
+ char cmd = bluetoothSerial.read();
+
+val=analogRead(LIGHT);
+  val=map(val,MIN_LIGHT,MAX_LIGHT,255,0);
+  val=constrain(val, 0, 255);
+  analogWrite(LED1pin, val);
+  analogWrite(LED2pin, val);
+
+switch (cmd) {
+    case 'f':
+
+      //모터A 정회전
+
+      analogWrite(A_1A, speed);
+      analogWrite(A_1B, 0);
+      //모터B 정회전
+      analogWrite(B_1A, speed);
+      analogWrite(B_1B, 0);
+      break;
+
+    case 'b':
+      //모터A 역회전
+      analogWrite(A_1A, 0);
+      analogWrite(A_1B, speed);
+      //모터B 역회전
+      analogWrite(B_1A, 0);
+      analogWrite(B_1B, speed);
+
+      break;
+
+    case 'r':
+      //모터A 정회전
+      analogWrite(A_1A, 0);
+      analogWrite(A_1B, 0);
+      //모터B 역회전
+      analogWrite(B_1A, speed);
+      analogWrite(B_1B, 0);
+
+      break;
+
+    case 'l':
+      //모터A 역회전
+      analogWrite(A_1A, speed);
+      analogWrite(A_1B, 0);
+      //모터B 정회전
+      analogWrite(B_1A, 0);
+      analogWrite(B_1B, 0);
+
+      break;
+    case 's':
+      //모터A 정지
+      analogWrite(A_1A, 0);
+      analogWrite(A_1B, 0);
+      //모터B 정지
+      analogWrite(B_1A, 0);
+      analogWrite(B_1B, 0);
+      break;
+
+     case 't':
+    
+    tone(SPEAKER, NOTE_G);
+    delay(100);
+       noTone(SPEAKER);
+
+     //버튼을 누르지 않으면 음 재생을 멈춤
+
+    case 'n':
+    noTone(SPEAKER);      
+
+  }
+ 
+  //10cm이내에 벽이 있다면 아래의 코드를 실행합니다.
+  if (getDistanceCM() < 10) {
+    stop();
+    tone(SPEAKER, NOTE_G);
+    delay(500);
+    switch(cmd);
+   
+  }
+else {
+    switch(cmd);
+  
+  }
+}
