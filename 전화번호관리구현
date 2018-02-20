@@ -1,0 +1,759 @@
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.EOFException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Iterator;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingConstants;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.WindowConstants;
+import javax.swing.border.Border;
+/*
+ * 
+ * 난 정말 자바를 공부한적이 없다구요 전화번호 관리 구현 프로그램
+ * 
+ * 내 멋대로 변형 ver 1.0
+ * 
+ * 
+ */
+class PhoneInfo implements Serializable {
+	String name;
+	String phoneNumber;
+	JTextArea are; // 메인 JFrame의 TextArea임.
+
+	public PhoneInfo(String name) {
+		// TODO Auto-generated constructor stub
+		this.name = name;
+	}
+
+	public PhoneInfo(String string, String string2, JTextArea area) {
+		// TODO Auto-generated constructor stub
+		this.name = string;
+		phoneNumber = string2;
+		are = area;
+	}
+
+	public String showPhoneDataInfo() {
+		return "name : " + name + '\n' + "phone : " + phoneNumber + '\n';
+	}
+
+	@Override
+	public int hashCode() { // 같은 이름을 가진 사람을 추가하는 것을 막기위함이다.
+		// TODO Auto-generated method stub
+		return name.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		// TODO Auto-generated method stub
+		PhoneInfo cmp = (PhoneInfo) obj; // 단순히 복잡함을 줄이기 위함.
+
+		if (name.compareTo(cmp.name) == 0)
+			return true;
+		else
+			return false;
+	}
+
+	public String toString() {
+		// TODO Auto-generated method stub
+		return "name : " + name + '\n' + "phone : " + phoneNumber + '\n';
+	}
+}
+
+class PhoneUnivInfo extends PhoneInfo { // 대학교 친구를 추가
+	String major;
+	String year;
+	JTextArea are;
+
+	public PhoneUnivInfo(String name, String num, String major, String year, JTextArea are) {
+		super(name, num, are);
+		this.major = major;
+		this.year = year;
+	}
+
+	@Override
+	public String showPhoneDataInfo() {
+		// TODO Auto-generated method stub
+		return super.toString() + "major : " + major + '\n' + "year : " + year + '\n';
+	}
+
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return super.toString() + "major : " + major + '\n' + "year : " + year + '\n';
+	}
+}
+
+class PhoneCompanyInfo extends PhoneInfo { // 회사 친구 ㅊ
+	String company;
+	JTextArea are;
+
+	public PhoneCompanyInfo(String name, String num, String company, JTextArea area) {
+		super(name, num, area);
+		this.company = company;
+		are = area;
+	}
+
+	@Override
+	public String showPhoneDataInfo() {
+		// TODO Auto-generated method stub
+		return super.toString() + "company :" + company + '\n';
+	}
+
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return super.toString() + "company :" + company + '\n';
+	}
+}
+
+class PhoneBookManager { // 프로그램을 실행을 관리하는 클래스이다.
+
+	private final File dataFile = new File("C:\\javastudy\\PhoneBook.data"); // data 파일을 저장한다.
+	HashSet<PhoneInfo> infoStorage = new HashSet<>(); // 자료형은 Hashset로 설정한다.
+
+	static PhoneBookManager inst = null; // PhoneBookManager을 한번만 생성하기 위함으로 static변수로 설정하고 초기값은 null로 쓴다.
+
+	public static PhoneBookManager createMangerInst() {
+		if (inst == null) // 만약 PhoneBookManager의 인스턴스를 생성하려면 이 방법으로만 해야한다.
+			inst = new PhoneBookManager(); // 인스턴스를 한번도 생성한 적이 없다면 인스턴스를 생성한다.
+
+		return inst;
+	}
+
+	private PhoneBookManager() {
+		readFromFile(); // 프로그램을 실행시 저장된 파일을 읽어오는 역할을 한다.
+	}
+
+	public String searchData(String name) { // SearchActionEventHandler에서 이름을 찾는 역할을 하는 메소드.
+		PhoneInfo info = search(name);
+		if (info != null) {
+			return info.toString();
+		} else
+			return null;
+	}
+
+	private PhoneInfo search(String name) { // 위의 searchData에서 찾는 역할을 하는 메소드이다.
+		Iterator<PhoneInfo> itr = infoStorage.iterator();
+
+		while (itr.hasNext()) {
+			PhoneInfo curInfo = itr.next();
+			if (name.compareTo(curInfo.name) == 0) // Iterator로 접근 후 일치하는 이름이 있으면 그 값을 반환한다.
+				return curInfo;
+		}
+		return null;
+	}
+
+	public void storeToFile() { // IO시스템에서 저장하는 역할을 한다. Exit를 누를 경우 선택할 수 있다.
+		try {
+			FileOutputStream file = new FileOutputStream(dataFile);
+			ObjectOutputStream out = new ObjectOutputStream(file);
+
+			Iterator<PhoneInfo> itr = infoStorage.iterator(); // Iterator을 통해 하나씩 때어온다.
+			while (itr.hasNext())
+				out.writeObject(itr.next()); // hasnext를 통해 다음 데이터가 있을때까지 저장한다.
+
+			out.close(); // 반드시 닫아준다.
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public void readFromFile() { // IO시스템에서 읽어오는 역할을 하며 실행과 동시에 호출, 시작된다.
+		if (dataFile.exists() == false) // 데이터 파일이 존재하지 않을 경우 그냥 반환시킨다.
+			return;
+		try {
+			FileInputStream file = new FileInputStream(dataFile);
+			ObjectInputStream in = new ObjectInputStream(file);
+
+			while (true) {
+				PhoneInfo info = (PhoneInfo) in.readObject();
+				if (info == null)
+					break;
+				infoStorage.add(info);
+			}
+			in.close();
+		} catch (EOFException e) {
+			return;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public boolean deleteData(String name) { // DEleteActionEventHandler에 의해서 삭제시키는 메소드이다.
+
+		Iterator<PhoneInfo> itr = infoStorage.iterator();
+		while (itr.hasNext()) {
+			PhoneInfo curInfo = itr.next();
+			if (name.compareTo(curInfo.name) == 0) {
+				itr.remove();
+				return true; // 삭제했으면 굳이 반복할 필요가 없음.
+			}
+		}
+		return false;
+	}
+}
+
+class ShowAllButtonHandler implements ActionListener {
+	JTextArea area; // panel2부분에 출력하기 위함임.
+
+	public ShowAllButtonHandler(JTextArea area) {
+		// TODO Auto-generated constructor stub
+		this.area = area;
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) { // 모두 출력 버튼을 클릭할 경우 발생한다.
+		// TODO Auto-generated method stub
+		PhoneBookManager manager = PhoneBookManager.createMangerInst();
+		int count = 0; // 데이터가 몇 개 저장되었는지 세기 위한 int값
+		if (manager.infoStorage.size() <= 0)
+			area.append("출력할 데이터가 없습니다...\n"); // 눌렀을 경우 저장된값이 없으면 메시지를 Panel2부분에 출력한다.
+		else {
+			area.append("모든 데이터를 출력합니다...\n");
+			Iterator<PhoneInfo> itr = manager.infoStorage.iterator();
+
+			while (itr.hasNext()) {
+				PhoneInfo curInfo = itr.next();
+				area.append(curInfo.showPhoneDataInfo() + "\n"); // 찾은 데이터를 출력한다.
+				count++; // 추가할때마다 count가 올라감.
+			}
+			area.append("총 " + count + "개의  데이터를 출력하였습니다. \n");
+		}
+	}
+}
+
+// 아래 클래스는 Input을 선택했을때 나오는 창을 위한것이다.
+class InputNormalButtonHandler implements ActionListener { // 일반을 선택할 경우 나타나는 창이다.
+	JTextField id;
+	JTextField phone;
+	JTextArea area; // 굳이 JTextarea를 넣은 이유는 showAllbutton에서 출력하기 위함이다.
+
+	public InputNormalButtonHandler(JTextField jf1, JTextField jf2, JTextArea area) {
+		// TODO Auto-generated constructor stub
+		id = jf1;
+		phone = jf2;
+		this.area = area;
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+
+		PhoneBookManager manager = PhoneBookManager.createMangerInst();
+
+		PhoneInfo info = new PhoneInfo(id.getText(), phone.getText(), area); // 가져온 텍스트로 PhoneInfo의 인스턴스를 생성한다.
+
+		id.setText(""); // 입력을 한 후 엔터를 쳤을 경우 id와 phone의 TextField를 초기화시켜준다.
+		phone.setText("");
+		boolean isAdded = manager.infoStorage.add(info); // 입력이 완료되었으면 true, 입력이 실패하면 false
+
+		if (isAdded == true) { // 저장을 성공적으로 완료했을경우.
+			JOptionPane.showConfirmDialog(null, "저장을 완료하였습니다", "Message", JOptionPane.CLOSED_OPTION);
+
+		} else // 같은 이름이 이미 있을경우 출력함. JOPtionPane이다.
+			JOptionPane.showConfirmDialog(null, "이미 저장된 데이터입니다.", "Message", JOptionPane.CLOSED_OPTION);
+	}
+}
+
+class InputUnivButtonHandler extends InputNormalButtonHandler implements ActionListener {
+	JTextField major, year; // 학년과 전공이 추가된다.
+
+	public InputUnivButtonHandler(JTextField id, JTextField phone, JTextField major, JTextField year, JTextArea area) {
+		// TODO Auto-generated constructor stub
+		super(id, phone, area);
+		this.major = major;
+		this.year = year;
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+
+		PhoneBookManager manager = PhoneBookManager.createMangerInst();
+
+		PhoneInfo info = new PhoneUnivInfo(id.getText(), phone.getText(), major.getText(), year.getText(), area);
+
+		// 입력과 동시에 초기화.
+		id.setText("");
+		phone.setText("");
+		major.setText("");
+		year.setText("");
+		boolean isAdded = manager.infoStorage.add(info); // InputNormal과 같음.
+
+		if (isAdded == true) {
+			JOptionPane.showConfirmDialog(null, "저장을 완료하였습니다", "Message", JOptionPane.CLOSED_OPTION);
+
+		} else
+			JOptionPane.showConfirmDialog(null, "이미 저장된 데이터입니다.", "Message", JOptionPane.CLOSED_OPTION);
+	}
+}
+
+class InputCompButtonHandler extends InputNormalButtonHandler implements ActionListener {
+	JTextField company;
+
+	public InputCompButtonHandler(JTextField id, JTextField phone, JTextField company, JTextArea area) {
+		// TODO Auto-generated constructor stub
+		super(id, phone, area);
+		this.company = company;
+
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+		PhoneBookManager manager = PhoneBookManager.createMangerInst();
+
+		PhoneInfo info = new PhoneCompanyInfo(id.getText(), phone.getText(), company.getText(), area);
+		// 입력과 동시에 초기화.
+		id.setText("");
+		phone.setText("");
+		company.setText("");
+
+		boolean isAdded = manager.infoStorage.add(info);
+		if (isAdded == true) {
+			JOptionPane.showConfirmDialog(null, "저장을 완료하였습니다", "Message", JOptionPane.CLOSED_OPTION);
+
+		} else
+			JOptionPane.showConfirmDialog(null, "이미 저장된 데이터입니다.", "Message", JOptionPane.CLOSED_OPTION);
+	}
+}
+
+class ChoiceInputHandler implements ActionListener { // 이 클래스는 JComboButton에서 선택할 경우 일어나는 이벤트를 위한 핸들러이다ㅣ.
+	JTextArea area;
+
+	public ChoiceInputHandler() {
+		// TODO Auto-generated constructor stub
+	}
+
+	public ChoiceInputHandler(JTextArea area) {
+		// TODO Auto-generated constructor stub
+		this.area = area;
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		JComboBox<String> cmb = (JComboBox<String>) e.getSource(); // JCombo에서 선택한 값을 받아온다.
+		int index = cmb.getSelectedIndex(); // 선택된 값을 받아온다. 일반은 0, 대학은 1, 회사는2번이다.
+
+		// JComboBox에서 선택할 시 아래 메소드를 호출한다.
+		switch (index) {
+		case 0:
+			normalCase();
+			break;
+		case 1:
+			univCase();
+			break;
+		case 2:
+			compCase();
+			break;
+		}
+	}
+
+	void normalCase() { // 일반의 경우 일반상자 생성
+		JFrame frm = new JFrame("일반 입력상자");
+		frm.setBounds(500, 300, 250, 150);
+		frm.setLayout(new GridLayout(0, 2));
+
+		JTextField nameField = new JTextField(15);
+		JTextField phoneField = new JTextField(15);
+		JLabel namelabel = new JLabel("이름 :", SwingConstants.RIGHT);
+		JLabel phonelabel = new JLabel("전화번호 :", SwingConstants.RIGHT);
+
+		frm.add(namelabel);
+		frm.add(nameField);
+		frm.add(phonelabel);
+		frm.add(phoneField);
+
+		// 굳이 area는 넘겨줄 필요가 없기때문에 area를 없앤 생성자필드를 새로 만들어도된다.
+
+		phoneField.addActionListener(new InputNormalButtonHandler(nameField, phoneField, area));
+
+		frm.setVisible(true);
+		frm.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+	}
+
+	void univCase() { // 대학의 경우 대학 입력4상자 생성
+		JFrame frm = new JFrame("대학 입력상자");
+		frm.setBounds(500, 300, 350, 250);
+		frm.setLayout(new GridLayout(4, 4));
+
+		JTextField nameField = new JTextField(15);
+		JTextField phoneField = new JTextField(15);
+		JTextField majorField = new JTextField(15);
+		JTextField yearField = new JTextField(15);
+
+		JLabel namelabel = new JLabel("이름 :", SwingConstants.RIGHT);
+		JLabel phonelabel = new JLabel("전화번호 :", SwingConstants.RIGHT);
+		JLabel majorlabel = new JLabel("전공 :", SwingConstants.RIGHT);
+		JLabel yearlabel = new JLabel("학년 :", SwingConstants.RIGHT);
+
+		frm.add(namelabel);
+		frm.add(nameField);
+		frm.add(phonelabel);
+		frm.add(phoneField);
+		frm.add(majorlabel);
+		frm.add(majorField);
+		frm.add(yearlabel);
+		frm.add(yearField);
+
+		yearField.addActionListener(new InputUnivButtonHandler(nameField, phoneField, majorField, yearField, area));
+
+		frm.setVisible(true);
+		frm.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+	}
+
+	void compCase() { // 회사의 경우 회사 입력상자 생성
+		JFrame frm = new JFrame("회사 입력상자");
+		frm.setBounds(500, 300, 300, 200);
+		frm.setLayout(new GridLayout(3, 3));
+
+		JTextField nameField = new JTextField(15);
+		JTextField phoneField = new JTextField(15);
+		JTextField companyField = new JTextField(15);
+
+		JLabel namelabel = new JLabel("이름 :", SwingConstants.RIGHT);
+		JLabel phonelabel = new JLabel("전화번호 :", SwingConstants.RIGHT);
+		JLabel companylabel = new JLabel("회사 :", SwingConstants.RIGHT);
+
+		frm.add(namelabel);
+		frm.add(nameField);
+		frm.add(phonelabel);
+		frm.add(phoneField);
+		frm.add(companylabel);
+		frm.add(companyField);
+
+		companyField.addActionListener(new InputCompButtonHandler(nameField, phoneField, companyField, area));
+
+		frm.setVisible(true);
+		frm.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+	}
+}
+
+class InputActionEventHandler implements ActionListener { // Input버튼을 눌렀을 경우 나타는 이벤트 리스너핸들러이다.
+	JTextArea area;
+
+	public InputActionEventHandler(JTextArea area) {
+		// TODO Auto-generated constructor stub
+		this.area = area;
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		/*
+		 * 기본 프레임 생성
+		 * 
+		 */
+		JFrame frm = new JFrame("입력 상자");
+		frm.setBounds(500, 300, 200, 70);
+		frm.setLayout(new FlowLayout()); //
+
+		/*
+		 * JComboBox 생성
+		 */
+
+		String subject[] = { "일반", "대학", "회사" }; // JComboBox에 들어갈 항목 이름의 배열이다.
+		JLabel comboLabel = new JLabel("구분을 선택해주세요.");
+
+		comboLabel.setFont(new Font("맑은고딕", 1, 15)); // 폰트를 설정한다.
+
+		JComboBox<String> combBox = new JComboBox<>(subject); // JComboBox에 항목을 추가한다.
+		combBox.addActionListener(new ChoiceInputHandler(area));
+
+		frm.add(comboLabel);
+		frm.add(combBox);
+		frm.setSize(250, 80);
+
+		frm.setVisible(true);
+		frm.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+
+	}
+}
+
+class SearchButtonHandler implements ActionListener { // 검색 버튼입력상자에서 검색을 눌렀을 경우 나타나는 이벤트리스너이다.
+	JTextField serchField;
+	JTextArea textArea;
+
+	public SearchButtonHandler(JTextField jf1, JTextArea area) {
+		// TODO Auto-generated constructor stub
+		serchField = jf1;
+		textArea = area;
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+		String name = serchField.getText().trim(); // 이름을 JTextField에서 받아와 trim으로 공백을 제거한다.
+		PhoneBookManager manager = PhoneBookManager.createMangerInst();
+		String searchResult = manager.searchData(name); // manager에 있는 searchData로 이름을 찾아온다.
+
+		if (searchResult == null)
+			textArea.append("해당하는 데이터가 존재하지 않습니다.\n"); // 찾는 값이 없으면 나오는 메세지
+		else {
+			textArea.append("찾으시는 정보를 알려드립니다..\n");
+			textArea.append(searchResult);
+			textArea.append("\n");
+		}
+
+	}
+}
+
+class SearchActionEventHandler implements ActionListener { // 검색버튼을 눌렀을 경우 나나타는 JFrame을 띄우기 위함이다.
+	JTextArea textArea;
+
+	public SearchActionEventHandler(JTextArea area) {
+		// TODO Auto-generated constructor stub
+		textArea = area;
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+
+		JTextField nameText = new JTextField(15);
+		JLabel namelabel = new JLabel("이름");
+		JButton btn = new JButton("검색");
+		JFrame frm = new JFrame("검색 상자");
+		frm.setBounds(120, 120, 300, 80);
+		frm.setLayout(new FlowLayout());
+
+		JPanel panel = new JPanel();
+		panel.setLayout(new FlowLayout());
+		panel.add(namelabel);
+		panel.add(nameText);
+
+		frm.add(panel);
+		frm.add(btn);
+
+		ActionListener actionHandler = new SearchButtonHandler(nameText, textArea);
+		btn.addActionListener(actionHandler);
+
+		frm.setVisible(true);
+		frm.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+
+	}
+}
+
+/*
+ * 삭제 핸들러
+ */
+class DeleteButtonHandler implements ActionListener {
+	JTextField deleteField;
+	JTextArea textArea;
+
+	public DeleteButtonHandler(JTextField jf1, JTextArea area) {
+		// TODO Auto-generated constructor stub
+		deleteField = jf1;
+		textArea = area;
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+		String name = deleteField.getText().trim();
+		PhoneBookManager manager = PhoneBookManager.createMangerInst();
+
+		boolean isDeleted = manager.deleteData(name);
+
+		if (isDeleted)
+			textArea.append("데이터 삭제를 완료하였습니다.. \n");
+		else
+			textArea.append("해당하는 데이터가 존재하지 않습니다.\n");
+	}
+
+}
+
+class DeleteActionEventHandler implements ActionListener {
+	JTextField delField;
+	JTextArea textArea;
+
+	public DeleteActionEventHandler(JTextArea area) {
+		// TODO Auto-generated constructor stub
+		textArea = area;
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+		JTextField nameText = new JTextField(15);
+		JLabel namelabel = new JLabel("이름");
+		JButton btn = new JButton("삭제");
+		JFrame frm = new JFrame("삭제 상자");
+		frm.setBounds(120, 120, 300, 80);
+		frm.setLayout(new FlowLayout());
+
+		JPanel panel = new JPanel();
+		panel.setLayout(new FlowLayout());
+		panel.add(namelabel);
+		panel.add(nameText);
+		frm.add(panel);
+		frm.add(btn);
+
+		ActionListener actionHandler = new DeleteButtonHandler(nameText, textArea);
+		btn.addActionListener(actionHandler);
+
+		frm.setVisible(true);
+		frm.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+
+	}
+}
+
+class ExitHandler implements ActionListener { // 종료버튼을 눌렀을 경우 나오는 이벤트핸들러이다.
+	JTextArea exit;
+
+	public ExitHandler(JTextArea area) {
+		// TODO Auto-generated constructor stub
+		exit = area;
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+
+		PhoneBookManager manager = PhoneBookManager.createMangerInst();
+
+		String str[] = { "저장하고 종료", "저장하지 않고 종료", "취소" }; // JOptionpane에서 나오는 메시지를 입력하기 위한 배열이다.
+		int choice = JOptionPane.showOptionDialog(exit, "내용을 저장하고 종료하시겠습니까?", "Message",
+				JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, str, str[0]);
+		if (choice == 0) {
+			manager.storeToFile(); // 저장하고 종료를 선택하면 인스턴스를 저장하는 메소드를 호출한다.
+			System.exit(0);
+		} else if (choice == 1) {
+			System.exit(0); // 그냥 종료
+		} else
+			return; // 취소 하면 그냥 return
+	}
+}
+
+class FrameField extends JFrame { // 여기 FrameField는 시작과 동시에 나타나는 GUI를위한 창이다.
+	private FrameField() {
+	} // 기본 생성자
+
+	JButton searchButton = new JButton("검색");
+	JButton inPutButton = new JButton("입력");
+	JButton deleteButton = new JButton("삭제");
+	JButton showAllButton = new JButton("전체 출력");
+	JButton exitButton = new JButton("프로그램 종료");
+
+	public FrameField(String title) {
+		// TODO Auto-generated constructor stub
+
+		super(title); // 제목
+
+		setBounds(500, 200, 450, 600);
+		setLayout(new BorderLayout());
+		JTextArea jArea = new JTextArea(20, 25); // 크기 조정
+		jArea.setEditable(false); // 수정할 수 없음.
+
+		Border searchBorder = BorderFactory.createEtchedBorder();
+		searchBorder = BorderFactory.createTitledBorder(searchBorder, "Menu");
+		// 경계선적용
+		Border informationBorder = BorderFactory.createEtchedBorder();
+		informationBorder = BorderFactory.createTitledBorder(informationBorder, "Screen");
+
+		Border exitBorder = BorderFactory.createEtchedBorder();
+		exitBorder = BorderFactory.createTitledBorder(exitBorder, "Save and exit");
+
+		jArea.setLineWrap(true); // 자동 줄바꿈이 일어남.
+
+		// panel1부분
+		JPanel panel1 = new JPanel();
+		panel1.setLayout(new FlowLayout());
+
+		searchButton.setPreferredSize(new Dimension(90, 30));
+		deleteButton.setPreferredSize(new Dimension(90, 30));
+		inPutButton.setPreferredSize(new Dimension(90, 30));
+		showAllButton.setPreferredSize(new Dimension(90, 30));
+		exitButton.setPreferredSize(new Dimension(200, 30));
+
+		panel1.add(searchButton);
+		panel1.add(deleteButton);
+		panel1.add(inPutButton);
+		panel1.add(showAllButton);
+
+		panel1.setBorder(searchBorder);
+		// 검색버튼
+		// panel1부분임
+
+		// panel2부분
+
+		JPanel panel2 = new JPanel();
+		panel2.setLayout(new FlowLayout());
+		JScrollPane scroll = new JScrollPane(jArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+				ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER); // 스크롤 추가. 이 스크롤은 항상 스크롤바가 나타난다.
+		panel2.add(scroll);
+		panel2.setSize(new Dimension(500, 500));
+		panel2.setBorder(informationBorder);
+
+		// panle2
+		// panel3부분
+		JPanel panel3 = new JPanel();
+		panel3.setLayout(new FlowLayout());
+
+		panel3.add(exitButton);
+		panel3.setBorder(exitBorder);
+		// panel3.add(delText);
+
+		// panel3
+		add(panel1, BorderLayout.NORTH);
+		add(panel2, BorderLayout.CENTER);
+		add(panel3, BorderLayout.SOUTH);
+
+		// addactionlistner 인터페이스에 추가함.
+
+		searchButton.addActionListener(new SearchActionEventHandler(jArea));
+		deleteButton.addActionListener(new DeleteActionEventHandler(jArea));
+		inPutButton.addActionListener(new InputActionEventHandler(jArea));
+		showAllButton.addActionListener(new ShowAllButtonHandler(jArea));
+		exitButton.addActionListener(new ExitHandler(jArea));
+
+		setVisible(true);
+		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+	}
+}
+
+class PhoneBookProject {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		try {
+			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel"); // 룩앤필 적용. 디자인효과
+			JFrame.setDefaultLookAndFeelDecorated(true);
+		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
+				| UnsupportedLookAndFeelException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+
+		FrameField frmfield = new FrameField("PhoneBookVer1.0"); // 시작
+
+	}
+}
